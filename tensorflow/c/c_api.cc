@@ -2499,9 +2499,18 @@ void TF_AddGradientsWithPrefix(TF_Graph* g, const char* prefix, TF_Output* y,
 
     // Update g->name_map with the name_map from the scope, which will contain
     // the new gradient ops.
+
+    // Assumes the pivot is the node created immediately before the gradient nodes.
+    // TODO: Add support for pivot parameter.
+    Node* pivot = g->graph.FindNodeId(first_new_node_id - 1);
+
     for (int i = first_new_node_id; i < g->graph.num_node_ids(); ++i) {
       Node* n = g->graph.FindNodeId(i);
       if (n == nullptr) continue;
+
+      // Add control edge from each newly created node to the pivot to force
+      // the new nodes to be in the same frame as pivot.
+      g->graph.AddControlEdge(pivot, n);
 
       // Adding the gradients to the graph can alter the prefix to prevent
       // name collisions only if this prefix has not been provided explicitly
